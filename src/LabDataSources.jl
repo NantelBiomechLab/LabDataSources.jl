@@ -1,5 +1,12 @@
 module LabDataSources
 
-# Write your package code here.
+using Mmap, Printf, Tables, DataFrames, CSV, CodecZlib, MAT, C3D, EzXML, OnlineStats,
+    ProgressMeter, Crayons, Reexport
+
+@reexport using DatasetManager
+
+include("c3d.jl")
+include("opensim.jl")
+include("visual3d.jl")
 
 end
