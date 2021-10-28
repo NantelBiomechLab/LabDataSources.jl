@@ -102,7 +102,6 @@ function DatasetManager.generatesource(
         prog = Progress(numframes;
             desc="│ Progress: ", enabled=show_progress, output=logio, dt = 1,
             showspeed=true)
-        @show prog
 
         worstmarker = (;label="", err=0.0, time=0.0, frame=0)
         tsqerr = Series(Mean(), Variance())
