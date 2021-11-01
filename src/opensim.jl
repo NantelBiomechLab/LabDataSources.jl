@@ -175,21 +175,14 @@ function DatasetManager.generatesource(
     return _src
 end
 
-function DatasetManager.readsource(src::OSimMotion;
-    series=nothing, drop=["time"], threaded=nothing
-)
-    if src.compressed
-        data = CSV.File(transcode(GzipDecompressor, Mmap.mmap(sourcepath(src))); header=11,
-            delim='\t', threaded, select=series, drop) |> DataFrame
-    else
-        data = CSV.File(sourcepath(src); header=11, delim='\t', threaded, select=series,
-            drop) |> DataFrame
-    end
+function DatasetManager.readsource(src::OSimMotion; series=Not("time"), kwargs...)
+    data = CSV.read(sourcepath(src), DataFrame; header=11, delim='\t', select=series,
+        buffer_in_memory=true, kwargs...)
 
     return data
 end
 
-function DatasetManager.readsegment(seg::Segment{OSimMotion}; series=nothing, threaded=nothing)
+function DatasetManager.readsegment(seg::Segment{OSimMotion}; series=nothing, kwargs...)
     if !isnothing(series)
         if "time" ∉ series
             push!(series, "time")
@@ -200,7 +193,9 @@ function DatasetManager.readsegment(seg::Segment{OSimMotion}; series=nothing, th
     else
         cols = Not("time")
     end
-    data = readsource(seg.source; series, threaded, drop=nothing)
+
+    data = readsource(seg.source; series, kwargs...)
+
     if !isnothing(seg.start)
         starti = searchsortedfirst(data[!, "time"], seg.start)
     else

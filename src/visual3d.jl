@@ -73,10 +73,8 @@ function DatasetManager.readsegment(seg::Segment{V3DExportSource};
     return (fs, outevents, outseries)
 end
 
-function DatasetManager.readsource(s::V3DEventsSource;
-    events::Union{Nothing,Vector{String}}=nothing, threaded=nothing, kwargs...
-)
-    events = CSV.File(sourcepath(s); header=2, datarow=6, select=events, drop=[1], threaded)
+function DatasetManager.readsource(s::V3DEventsSource; kwargs...)
+    events = CSV.File(sourcepath(s); header=2, skipto=6, kwargs...)
 
     return Dict(string(name) => sort!(collect(skipmissing(Tables.getcolumn(events, name))))
         for name in Tables.columnnames(events))
@@ -87,13 +85,18 @@ function deletefirst!(a::Vector, n::Integer)
     return a
 end
 
-function DatasetManager.readsegment(seg::Segment{V3DEventsSource};
-    events=nothing, threaded=nothing, kwargs...
-)
-    src = readsource(seg.source; events, threaded, kwargs...)
+function DatasetManager.readsegment(seg::Segment{V3DEventsSource}; kwargs...)
+    src = readsource(seg.source; kwargs...)
+
+    if !isnothing(seg.finish)
+        foreach(src) do (_, v)
+            l = searchsortedlast(v, seg.finish)
+            resize!(v, l)
+        end
+    end
 
     if !isnothing(seg.start)
-        foreach(src) do (k, v)
+        foreach(src) do (_, v)
             f = searchsortedfirst(v, seg.start)
             if f ≤ length(v)
                 deletefirst!(v, f-1)
@@ -101,13 +104,6 @@ function DatasetManager.readsegment(seg::Segment{V3DEventsSource};
                 empty!(v)
             end
             v .-= seg.start
-        end
-    end
-
-    if !isnothing(seg.finish)
-        foreach(src) do (k, v)
-            l = searchsortedlast(v, seg.finish)
-            resize!(v, l)
         end
     end
 
@@ -132,8 +128,6 @@ end
 function writeeventsfile(
     fn::String, events::Vararg{Tuple{K,<:AbstractVector},N}
 ) where K <: Union{Symbol, String} where N
-    (path, io) = mktemp()
-
     header = fill("", (5,1))
     header[5,1] = "ITEM"
     numevents = maximum(broadcast(x -> size(x[2],1), events))
