@@ -110,10 +110,10 @@ function DatasetManager.readsegment(seg::Segment{V3DEventsSource}; kwargs...)
     return src
 end
 
-function generatesource(trial, src::V3DEventsSource, deps; genfunc)
+function DatasetManager.generatesource(trial, src::V3DEventsSource, deps; genfunc, kwargs...)
     mkpath(dirname(sourcepath(src)))
 
-    events = genfunc(trial)
+    events = genfunc(trial; kwargs...)
     writeeventsfile(sourcepath(src), events)
 
     return src
@@ -146,7 +146,7 @@ function writeeventsfile(
         eventdata = [ eventdata tmp ]
     end
 
-    CSV.write(fn, Tables.table([header; eventdata]); delim='\t')
+    CSV.write(fn, Tables.table([header; eventdata]); delim='\t', writeheader=false)
 
     return nothing
 end
