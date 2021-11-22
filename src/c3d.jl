@@ -9,14 +9,14 @@ end
 
 struct TRCFile; end
 
-function DatasetManager.readsource(s::Source{TRCFile}; threaded=nothing, select=nothing, drop=["Frame#"])
+function DatasetManager.readsource(s::Source{TRCFile}; select=nothing, drop=["Frame#"])
     colnames = open(sourcepath(s)) do io
         readline(io); readline(io); readline(io)
         ln = readline(io)
         split(ln, r"[,\s]")
     end
 
-    trc = CSV.File(sourcepath(s); header=false, datarow=7, threaded) |> DataFrame
+    trc = CSV.read(sourcepath(s), DataFrame; header=false, datarow=7)
     while (length(colnames)-2) % 3 !== 0
         pop!(colnames)
     end
