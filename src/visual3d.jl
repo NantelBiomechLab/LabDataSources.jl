@@ -74,7 +74,7 @@ function DatasetManager.readsegment(seg::Segment{V3DExportSource};
 end
 
 function DatasetManager.readsource(s::V3DEventsSource; kwargs...)
-    events = CSV.File(sourcepath(s); header=2, skipto=6, kwargs...)
+    events = CSV.File(sourcepath(s); header=2, skipto=6, drop=[1], kwargs...)
 
     return Dict(string(name) => sort!(collect(skipmissing(Tables.getcolumn(events, name))))
         for name in Tables.columnnames(events))
