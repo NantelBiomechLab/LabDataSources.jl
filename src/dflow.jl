@@ -1,32 +1,35 @@
-using DatasetManager, TextParse
+export DFlow, RawDFlowPDSource
 
-export DFlowSource, RawDFlowPDSource
+struct DFlow; end
+struct RawDFlow; end
+struct RawDFlowPD; end
 
-struct DFlowSource <: AbstractSource
-    path::String
+const DFlowSource = Source{DFlow}
+const RawDFlowPDSource = Source{RawDFlowPD}
+
+function DatasetManager.readsource(s::DFlowSource; kwargs...)
+    CSV.read(DataFrame, sourcepath(s); header=2, kwargs...)
 end
 
-struct RawDFlowPDSource <: AbstractSource
-    path::String
+function DatasetManager.readsource(s::Source{RawDFlow}; kwargs...)
+    CSV.read(DataFrame, sourcepath(s); header=1, kwargs...)
 end
 
-function DatasetManager.readsource(s::DFlowSource; threaded=true, kwargs...)
-    # csvread(sourcepath(s); skiplines_begin=1, header_exists=true, kwargs...)
-    CSV.File(sourcepath(s); header=2, threaded, kwargs...) |> DataFrames
+function DatasetManager.readsource(s::Source{RawDFlowPD}; kwargs...)
+    CSV.read(DataFrame, sourcepath(s); header=7, kwargs...)
 end
 
-function DatasetManager.readsource(s::RawDFlowPDSource; kwargs...)
-    csvread(sourcepath(s), '\t'; skiplines_begin=7, header_exists=false, kwargs...)
-    # CSV.File(sourcepath(s);
+function DatasetManager.readsegment(s::Source{RawDFlowPD}; kwargs...)
+
 end
 
 function DatasetManager.readsegment(
     seg::Segment{O}; kwargs...
-) where O <: Union{DFlowSource,RawDFlowPDSource}
+) where O <: Union{Source{DFlow},Source{RawDFlow}}
     timecol = (O isa DFlowSource) ? 1 : 2
     columns, colnames = readsource(seg.source; kwargs...)
     firsttime = first(columns[timecol])
-    lasttime = last(columns[timecol])
+    lasttime  = last(columns[timecol])
 
     if isnothing(seg.finish)
         _finish = lasttime

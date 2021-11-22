@@ -8,5 +8,6 @@ using Mmap, Printf, Tables, DataFrames, CSV, CodecZlib, MAT, C3D, EzXML, OnlineS
 include("c3d.jl")
 include("opensim.jl")
 include("visual3d.jl")
+include("dflow.jl")
 
 end
