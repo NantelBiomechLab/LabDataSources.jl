@@ -73,10 +73,15 @@ function DatasetManager.readsegment(seg::Segment{V3DExportSource};
     return (fs, outevents, outseries)
 end
 
+function any_or_bust(vec)
+    return (vec isa Vector{Union{}}) ? [] : vec
+end
+
 function DatasetManager.readsource(s::V3DEventsSource; kwargs...)
     events = CSV.File(sourcepath(s); header=2, skipto=6, drop=[1], kwargs...)
 
-    return Dict(string(name) => sort!(collect(skipmissing(Tables.getcolumn(events, name))))
+    # @show identity(collect(identity(collect(Tables.getcolumn(events, :RFO)))))
+    return Dict(string(name) => sort(any_or_bust(collect(skipmissing(Tables.getcolumn(events, name)))))
         for name in Tables.columnnames(events))
 end
 
