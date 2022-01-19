@@ -8,19 +8,15 @@ const DFlowSource = Source{DFlow}
 const RawDFlowPDSource = Source{RawDFlowPD}
 
 function DatasetManager.readsource(s::DFlowSource; kwargs...)
-    CSV.read(DataFrame, sourcepath(s); header=2, kwargs...)
+    CSV.read(sourcepath(s), DataFrame; header=2, kwargs...)
 end
 
 function DatasetManager.readsource(s::Source{RawDFlow}; kwargs...)
-    CSV.read(DataFrame, sourcepath(s); header=1, kwargs...)
+    CSV.read(sourcepath(s), DataFrame; header=1, kwargs...)
 end
 
 function DatasetManager.readsource(s::Source{RawDFlowPD}; kwargs...)
-    CSV.read(DataFrame, sourcepath(s); header=7, kwargs...)
-end
-
-function DatasetManager.readsegment(s::Source{RawDFlowPD}; kwargs...)
-
+    CSV.read(sourcepath(s), DataFrame; header=7, kwargs...)
 end
 
 function DatasetManager.readsegment(
