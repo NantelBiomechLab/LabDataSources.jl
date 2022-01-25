@@ -125,14 +125,13 @@ function DatasetManager.generatesource(trial, src::V3DEventsSource, deps; genfun
 end
 
 function writeeventsfile(
-    fn::String, events::Dict{K,<:AbstractVector}
-) where K <: Union{Symbol, String}
-    writeeventsfile(fn, zip(keys(events), values(events))...)
+    fn::String, events)
+    writeeventsfile(fn, pairs(events)...)
 end
 
 function writeeventsfile(
-    fn::String, events::Vararg{Tuple{K,<:AbstractVector},N}
-) where K <: Union{Symbol, String} where N
+    fn::String, events::Vararg{Union{Tuple{K,<:AbstractVector},Pair{K,<:AbstractVector}}}
+) where K <: Union{Symbol, String}
     header = fill("", (5,1))
     header[5,1] = "ITEM"
     numevents = maximum(broadcast(x -> size(x[2],1), events))
@@ -151,6 +150,7 @@ function writeeventsfile(
         eventdata = [ eventdata tmp ]
     end
 
+    mkpath(dirname(fn))
     CSV.write(fn, Tables.table([header; eventdata]); delim='\t', writeheader=false)
 
     return nothing
