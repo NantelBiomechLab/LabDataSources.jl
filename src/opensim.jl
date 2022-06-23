@@ -44,8 +44,8 @@ const RST = Crayon(reset=true)
 
 const terrstr = Printf.Format(
     "│ Total error²: %1.2f ± %1.2f \e[2mcm\e[0m   "*
-    "Max error:  %s%1.2f ± %1.2f\e[0m \e[2mcm\e[0m (%1.2f … %1.2f) "*
-    "\e[2m(min … max)\e[0m\n"
+    "Max error:  %s%1.2f ± %1.2f\e[0m \e[2mcm\e[0m (%1.2f…%1.2f cm"*
+    "\e[2m, min … max\e[0m)\n"
 )
 const rmserrstr = Printf.Format(
     "│ RMS error:    %s%1.2f ± %1.2f\e[0m \e[2mcm\e[0m   "*
@@ -165,7 +165,7 @@ function DatasetManager.generatesource(
             flag || print(logio, ", ")
             mod(i, 3) == 1 && print(logio, "\n│   ")
             v = value(vals[sp[i]])
-            @printf(logio, "%s: %1.2f \e[2mcm (%i frames)\e[0m", ks[sp[i]],
+            @printf(logio, "%s: %1.2f \e[2mcm\e[0m (%i frames)", ks[sp[i]],
                 value(vals[sp[i]]), vals[sp[i]].n)
             flag = false
         end
