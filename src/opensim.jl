@@ -1,4 +1,4 @@
-export OSimModel, OSimMotion
+export OSimModel, OSimMotion, OSimSTO
 
 struct OSimModel; end
 srcname_default(::Type{Source{OSimModel}}) = "osim"
@@ -16,6 +16,21 @@ function OSimMotion(path)
     end
 
     OSimMotion(path, compressed)
+end
+
+function decompress(src::OSimMotion)
+    if src.compressed
+        path, io = mktemp()
+        open(sourcepath(src), "r") do inio
+            write(io, GzipCompressorStream(inio))
+        end
+        close(io)
+        mv(path, path*".mot")
+
+        return OSimMotion(path)
+    end
+
+    return src
 end
 
 DatasetManager.srcext(::Type{OSimMotion}) = ".mot"
@@ -209,5 +224,98 @@ function DatasetManager.readsegment(seg::Segment{OSimMotion}; series=nothing, kw
     end
 
     return data[starti:lasti, cols]
+end
+
+struct OSimSTO; end
+DatasetManager.dependencies(::Type{Source{OSimSTO}}) = (Source{OSimModel}, OSimMotion)
+
+struct Vec3 <: FieldVector{3,Float32}
+    x::Float32
+    y::Float32
+    z::Float32
+end
+
+function Base.parse(::Type{Vec3}, str)
+    Vec3(parse.(Float32, split(str, ','))...)
+end
+
+function Base.tryparse(::Type{Vec3}, str)
+    local v3
+    try
+        v3 = parse(Vec3, str)
+    catch
+        v3 = nothing
+    end
+
+    return v3
+end
+
+function DatasetManager.readsource(src::Source{OSimSTO}; kwargs...)
+    data = CSV.read(sourcepath(src), DataFrame; header=5, delim='\t', buffer_in_memory=true,
+        types=(i,name) -> (i === 1 ? Float64 : Vec3), kwargs...)
+
+    return data
+end
+
+const SPIN = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+function DatasetManager.generatesource(
+    trial,
+    src::Source{OSimSTO},
+    deps;
+    setupxml,
+    logio=stdout,
+    show_progress=true,
+    starttime = -Inf,
+    finishtime = Inf
+)
+    mkpath(dirname(sourcepath(src)))
+    tmpdir = tempname()
+    mkpath(tmpdir)
+
+    model = getsource(trial, only(filter(x-> Source{OSimModel} === x ||
+        (x isa Pair && Source{OSimModel} ∈ x), deps)))
+    mot = decompress(getsource(trial, only(filter(x-> OSimMotion === x ||
+    (x isa Pair && OSimMotion ∈ x), deps))))
+
+    setup = readxml(setupxml)
+    nd = findfirst("//AnalyzeTool", setup)
+    nd["name"] = trial.name
+
+    nd = findfirst("//AnalyzeTool/model_file", setup)
+    setnodecontent!(nd, sourcepath(model))
+
+    nd = findfirst("//AnalyzeTool/results_directory", setup)
+    setnodecontent!(nd, dirname(sourcepath(src)))
+
+    nd = findfirst("//AnalyzeTool/coordinates_file", setup)
+    setnodecontent!(nd, sourcepath(mot))
+
+    nd = findfirst("//AnalyzeTool/initial_time", setup)
+    setnodecontent!(nd, "$starttime")
+    nd = findfirst("//AnalyzeTool/final_time", setup)
+    setnodecontent!(nd, "$finishtime")
+    nds = findall("//AnalyzeTool/start_time", setup)
+    setnodecontent!.(nds, "$finishtime")
+    nds = findall("//AnalyzeTool/end_time", setup)
+    setnodecontent!.(nds, "$finishtime")
+
+    setuppath = tempname(tmpdir)
+    write(setuppath, setup)
+
+    println(IOContext(logio, :limit=>true), "╭ Running OpenSim AnalyzeTool for $trial")
+    proc = run(Cmd(`opensim-cmd run-tool $setuppath`; dir=tmpdir); wait=false)
+    prog = ProgressUnknown(;enabled=show_progress, output=logio, spinner=true)
+
+    while process_running(proc)
+        sleep(1);
+        next!(prog; spinner=SPIN)
+    end
+    finish!(prog)
+    println(logio, "╰───────")
+
+    isfile(sourcepath(src)) || throw(error("OpenSim Analysis failed for $trial"))
+
+    return src
 end
 
