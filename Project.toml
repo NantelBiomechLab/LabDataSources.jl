@@ -1,7 +1,7 @@
 name = "LabDataSources"
 uuid = "3f048c1c-c20e-472f-bb30-3059a370834e"
 authors = ["Allen Hill <allenofthehills@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 C3D = "de436766-0b2a-5f82-bc5b-1ccc5f599b83"
