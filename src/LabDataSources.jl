@@ -1,9 +1,7 @@
 module LabDataSources
 
-using Mmap, Printf, Tables, DataFrames, CSV, CodecZlib, MAT, C3D, EzXML, OnlineStats,
-    ProgressMeter, Crayons, Reexport
-
-@reexport using DatasetManager
+using DatasetManager, Mmap, Printf, Tables, DataFrames, CSV, CodecZlib, MAT, C3D, EzXML,
+    OnlineStats, ProgressMeter, Crayons, StaticArrays, DSP
 
 include("c3d.jl")
 include("opensim.jl")
